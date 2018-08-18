@@ -2,7 +2,10 @@ package com.github.pgycode.askpermission;
 
 import android.Manifest;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -11,87 +14,86 @@ import android.widget.Toast;
 import com.github.pgycode.askpermission.permission.OnAskAppearListener;
 import com.github.pgycode.askpermission.permission.PermissionAsker;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
 
 
-    private PermissionAsker askerRead;//申请写入权限
-    private PermissionAsker askerWrite;//申请读取权限
-    private PermissionAsker askerRecode;//申请录音权限
-    private PermissionAsker askerCamera;//申请拍照权限
+    //初始化强制权限
+    private PermissionAsker initAsker;
+
+    //内部非强制权限
+    private PermissionAsker softFileAsker;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        askerRead = new PermissionAsker(this, new OnAskAppearListener() {
-            @Override
-            public void onAppear() {
-                Toast.makeText(MainActivity.this, "已经成功获取文件读取权限", Toast.LENGTH_SHORT).show();
-            }
-        },Manifest.permission.READ_EXTERNAL_STORAGE,2,2, "为了测试，我希望申请文件读取权限",true);
+        initAsker = new PermissionAsker.Builder()
+                .setActivity(this)
+                .setActivityCode(2)
+                .setPermisstionCode(2)
+                .setAskReason("为了测试，我们需要你的这些权限")
+                .setPermissions( new String[]{
+                        Manifest.permission.RECORD_AUDIO,
+                        Manifest.permission.CAMERA
+                })
+                .setMust(true)
+                .setListener(new OnAskAppearListener() {
+                    @Override
+                    public void onAppear() {
+                        Toast.makeText(MainActivity.this, "成功啦", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .build();
 
-        askerWrite = new PermissionAsker(this, new OnAskAppearListener() {
-            @Override
-            public void onAppear() {
-                Toast.makeText(MainActivity.this, "已经成功获取文件写入权限", Toast.LENGTH_SHORT).show();
-            }
-        },Manifest.permission.WRITE_EXTERNAL_STORAGE,3,3, "为了测试，我希望申请文件写入权限",true);
+        softFileAsker = new PermissionAsker.Builder()
+                //activity
+                .setActivity(this)
+                //activty请求码
+                .setActivityCode(4)
+                //请求原因
+                .setAskReason("非强制读取你的文件权限。")
+                //回调事件
+                .setListener(new OnAskAppearListener() {
+                    @Override
+                    public void onAppear() {
+                        Toast.makeText(MainActivity.this, "非强制拿到", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                //是否必须获取
+                .setMust(false)
+                //要获取的权限
+                .setPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE})
+                //权限请求码
+                .setPermisstionCode(4)
+                .build();
 
-        askerRecode = new PermissionAsker(this, new OnAskAppearListener() {
-            @Override
-            public void onAppear() {
-                Toast.makeText(MainActivity.this, "已经成功获取录音权限", Toast.LENGTH_SHORT).show();
-            }
-        },Manifest.permission.RECORD_AUDIO,4,4, "为了测试，我希望申请录音权限",false);
+        initAsker.onAsk();
 
-        askerCamera = new PermissionAsker(this, new OnAskAppearListener() {
-            @Override
-            public void onAppear() {
-                Toast.makeText(MainActivity.this, "已经成功获取拍照权限", Toast.LENGTH_SHORT).show();
-            }
-        },Manifest.permission.CAMERA,5,5, "为了测试，我希望申请拍照权限",false);
 
-        findViewById(R.id.btn_read).setOnClickListener(this);
-        findViewById(R.id.btn_write).setOnClickListener(this);
-        findViewById(R.id.btn_recode).setOnClickListener(this);
-        findViewById(R.id.btn_carame).setOnClickListener(this);
+        findViewById(R.id.btn_soft).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                softFileAsker.onAsk();
+            }
+        });
     }
 
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        askerRead.onChoose(requestCode, grantResults);
-        askerWrite.onChoose(requestCode, grantResults);
-        askerRecode.onChoose(requestCode, grantResults);
-        askerCamera.onChoose(requestCode, grantResults);
+        initAsker.onChoose(requestCode, grantResults);
+        softFileAsker.onChoose(requestCode, grantResults);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        askerRead.onSet(requestCode);
-        askerWrite.onSet(requestCode);
-        askerRecode.onSet(requestCode);
-        askerCamera.onSet(requestCode);
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()){
-            case R.id.btn_read:
-                askerRead.onAsk();
-                break;
-            case R.id.btn_write:
-                askerWrite.onAsk();
-                break;
-            case R.id.btn_recode:
-                askerRecode.onAsk();
-                break;
-            case R.id.btn_carame:
-                askerCamera.onAsk();
-                break;
-        }
+        initAsker.onSet(requestCode);
+        softFileAsker.onSet(requestCode);
     }
 }

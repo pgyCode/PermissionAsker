@@ -7,23 +7,7 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:id="@+id/btn_read"
-        android:text="申请读取权限(强制)"/>
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:id="@+id/btn_write"
-        android:text="申请写入权限(强制)"/>
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:id="@+id/btn_recode"
-        android:text="申请录音权限(非强制)"/>
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:id="@+id/btn_carame"
-        android:text="申请拍照权限(非强制)"/>
+        android:id="@+id/btn_soft"
+        android:text="申请文件权限(非强制)"/>
 
 </LinearLayout>
