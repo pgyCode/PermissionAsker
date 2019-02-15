@@ -1,4 +1,4 @@
-package com.github.pgycode.askpermission.permission;
+package com.github.pgycode.askpermission;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -35,7 +35,7 @@ public class PermissionAsker {
      * @param activityCode 跳转到设置界面的requestCode
      * @param askReason 是否弹出dialog跳转到权限设置
      */
-    public PermissionAsker(Activity activity, Fragment fragment, OnAskAppearListener listener, String[] permisstions, int permissionCode, int activityCode, String askReason, boolean must){
+    private PermissionAsker(Activity activity, Fragment fragment, OnAskAppearListener listener, String[] permisstions, int permissionCode, int activityCode, String askReason, boolean must){
         this.activity = activity;
         this.fragment = fragment;
         this.listener = listener;
@@ -55,6 +55,8 @@ public class PermissionAsker {
                 }
             }
             listener.onAppear();
+        } else {
+            listener.onAppear();
         }
     }
 
@@ -66,14 +68,22 @@ public class PermissionAsker {
      */
     public void onChoose(int requestCode, int[] grantResults){
         isAsking = false;
+        //返回了属于我的权限申请码---1.正常情况，2.异常返回
         if (requestCode == permissionCode){
-            for (int grantResult : grantResults) {
-                if (grantResult != PackageManager.PERMISSION_GRANTED){
-                    showDialog();
-                    return;
+            //检查权限码数量---->正常返回
+            if (grantResults.length == permissions.length) {
+                for (int grantResult : grantResults) {
+                    if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                        showDialog();
+                        return;
+                    }
                 }
+                listener.onAppear();
             }
-            listener.onAppear();
+            //异常返回
+            else {
+                onAsk();
+            }
         }
     }
 
@@ -99,12 +109,15 @@ public class PermissionAsker {
     private void showDialog(){
         if (!isAsking) {
             AlertDialog.Builder builder = new AlertDialog.Builder(activity).setTitle("权限申请").setMessage(askReason)
-                    .setPositiveButton("立即开启", new DialogInterface.OnClickListener() {
+                    .setPositiveButton("去设置", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            for (int i = 0; i < permissions.length; i++) {
-                                if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, permissions[i])
-                                        && ActivityCompat.checkSelfPermission(activity, permissions[i]) != PackageManager.PERMISSION_GRANTED) {
+                            /**
+                             * 如果这些权限中有被不再询问的权限，直接跳转到设置界面。 如果都没有被设置不再询问，弹出申请框
+                             */
+                            for (String permission : permissions) {
+                                if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+                                        && ActivityCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
                                     goToAppSetting();
                                     return;
                                 }
@@ -136,13 +149,15 @@ public class PermissionAsker {
         activity.startActivityForResult(intent, activityCode);
     }
 
-
+    //权限申请内部已经按需申请权限，直接申请全部权限即可
     private void ask(){
         isAsking = true;
         if (fragment != null) {
             fragment.requestPermissions(permissions, permissionCode);
         } else {
-            activity.requestPermissions(permissions, permissionCode);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                activity.requestPermissions(permissions, permissionCode);
+            }
         }
     }
 
@@ -152,7 +167,7 @@ public class PermissionAsker {
         private Fragment fragment;
         private OnAskAppearListener listener;
         private String[] permissions;
-        private int permisstionCode;
+        private int permissionCode;
         private int activityCode;
         private String askReason;
         private boolean must;
@@ -162,7 +177,7 @@ public class PermissionAsker {
             fragment = null;
             listener = null;
             permissions = null;
-            permisstionCode = -1;
+            permissionCode = -1;
             activityCode = -1;
             askReason = null;
             must = false;
@@ -189,7 +204,7 @@ public class PermissionAsker {
         }
 
         public Builder setPermisstionCode(int permisstionCode) {
-            this.permisstionCode = permisstionCode;
+            this.permissionCode = permisstionCode;
             return this;
         }
 
@@ -209,7 +224,7 @@ public class PermissionAsker {
         }
 
         public PermissionAsker build(){
-            return new PermissionAsker(activity, fragment, listener, permissions, permisstionCode, activityCode, askReason, must);
+            return new PermissionAsker(activity, fragment, listener, permissions, permissionCode, activityCode, askReason, must);
         }
     }
 }

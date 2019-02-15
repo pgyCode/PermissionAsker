@@ -1,4 +1,4 @@
-package com.github.pgycode.askpermission.permission;
+package com.github.pgycode.askpermission;
 
 public interface OnAskAppearListener {
 
